@@ -1,0 +1,216 @@
+import React, { useState } from "react";
+import { Search, ShoppingCart } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import ProductGrid from "./ProductGrid";
+import FilterSidebar from "./FilterSidebar";
+
+interface HomeProps {
+  initialCartCount?: number;
+}
+
+const Home = ({ initialCartCount = 0 }: HomeProps) => {
+  const [cartCount, setCartCount] = useState(initialCartCount);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<{
+    categories: string[];
+    priceRange: [number, number];
+    sortBy: string;
+  }>({
+    categories: [],
+    priceRange: [0, 1000],
+    sortBy: "featured",
+  });
+
+  // Mock function to simulate search suggestions
+  const handleSearchInput = (query: string) => {
+    setSearchQuery(query);
+    if (query.length > 1) {
+      // Mock suggestions based on input
+      const mockSuggestions = [
+        `${query} shirts`,
+        `${query} pants`,
+        `${query} accessories`,
+        `${query} shoes`,
+      ];
+      setSearchSuggestions(mockSuggestions);
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleAddToCart = () => {
+    setCartCount((prevCount) => prevCount + 1);
+  };
+
+  const handleFilterChange = (newFilters: typeof activeFilters) => {
+    setActiveFilters(newFilters);
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setShowSuggestions(false);
+    // In a real app, this would trigger a search API call
+    console.log("Searching for:", searchQuery);
+  };
+
+  const selectSuggestion = (suggestion: string) => {
+    setSearchQuery(suggestion);
+    setShowSuggestions(false);
+    // In a real app, this would trigger a search API call
+    console.log("Selected suggestion:", suggestion);
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center">
+            <h1 className="text-2xl font-bold text-primary mr-8">ShopEase</h1>
+            <div className="relative hidden md:block w-96">
+              <form onSubmit={handleSearchSubmit} className="relative">
+                <Input
+                  type="text"
+                  placeholder="Search products..."
+                  className="pl-10 pr-4 py-2 w-full"
+                  value={searchQuery}
+                  onChange={(e) => handleSearchInput(e.target.value)}
+                  onBlur={() =>
+                    setTimeout(() => setShowSuggestions(false), 200)
+                  }
+                />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              </form>
+              {showSuggestions && searchSuggestions.length > 0 && (
+                <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
+                  <ul>
+                    {searchSuggestions.map((suggestion, index) => (
+                      <li
+                        key={index}
+                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                        onClick={() => selectSuggestion(suggestion)}
+                      >
+                        {suggestion}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <Button variant="ghost" className="relative">
+              <ShoppingCart className="h-6 w-6" />
+              {cartCount > 0 && (
+                <Badge className="absolute -top-2 -right-2 bg-primary text-white">
+                  {cartCount}
+                </Badge>
+              )}
+            </Button>
+            <div className="hidden md:block">
+              <Button variant="outline" className="mr-2">
+                Sign In
+              </Button>
+              <Button>Sign Up</Button>
+            </div>
+          </div>
+        </div>
+        <div className="md:hidden container mx-auto px-4 pb-4">
+          <form onSubmit={handleSearchSubmit} className="relative">
+            <Input
+              type="text"
+              placeholder="Search products..."
+              className="pl-10 pr-4 py-2 w-full"
+              value={searchQuery}
+              onChange={(e) => handleSearchInput(e.target.value)}
+            />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          </form>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Sidebar */}
+          <aside className="w-full md:w-64 shrink-0">
+            <FilterSidebar onFilterChange={handleFilterChange} />
+          </aside>
+
+          {/* Product Grid */}
+          <div className="flex-1">
+            <div className="mb-6 flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Products</h2>
+              <div className="text-sm text-gray-500">
+                Showing 24 of 256 products
+              </div>
+            </div>
+            <ProductGrid
+              filters={activeFilters}
+              onAddToCart={handleAddToCart}
+            />
+          </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-gray-100 border-t border-gray-200 mt-12">
+        <div className="container mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+              <h3 className="font-semibold mb-4">Shop</h3>
+              <ul className="space-y-2 text-sm">
+                <li>New Arrivals</li>
+                <li>Best Sellers</li>
+                <li>Sale Items</li>
+                <li>Collections</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-4">Help</h3>
+              <ul className="space-y-2 text-sm">
+                <li>FAQ</li>
+                <li>Shipping & Returns</li>
+                <li>Contact Us</li>
+                <li>Track Order</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-4">About</h3>
+              <ul className="space-y-2 text-sm">
+                <li>Our Story</li>
+                <li>Sustainability</li>
+                <li>Careers</li>
+                <li>Press</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-4">Connect</h3>
+              <p className="text-sm mb-4">
+                Subscribe to our newsletter for updates and promotions.
+              </p>
+              <div className="flex">
+                <Input
+                  type="email"
+                  placeholder="Your email"
+                  className="rounded-r-none"
+                />
+                <Button className="rounded-l-none">Subscribe</Button>
+              </div>
+            </div>
+          </div>
+          <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-center text-gray-500">
+            © 2023 ShopEase. All rights reserved.
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default Home;
