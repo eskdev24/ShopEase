@@ -1,17 +1,28 @@
-import React, { useState } from "react";
-import { Search, ShoppingCart } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Search, ShoppingCart, User, LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import ProductGrid from "./ProductGrid";
 import FilterSidebar from "./FilterSidebar";
+import { authService, User as UserType } from "@/services/auth";
+import { useCart } from "@/contexts/CartContext";
+import Login from "./Login";
+import Signup from "./Signup";
 
 interface HomeProps {
   initialCartCount?: number;
 }
 
 const Home = ({ initialCartCount = 0 }: HomeProps) => {
-  const [cartCount, setCartCount] = useState(initialCartCount);
+  // Auth state
+  const [currentUser, setCurrentUser] = useState<UserType | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSignupModal, setShowSignupModal] = useState(false);
+
+  // Cart state from context
+  const { cartCount } = useCart();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -24,6 +35,12 @@ const Home = ({ initialCartCount = 0 }: HomeProps) => {
     priceRange: [0, 1000],
     sortBy: "featured",
   });
+
+  // Check authentication status on component mount
+  useEffect(() => {
+    const user = authService.getCurrentUser();
+    setCurrentUser(user);
+  }, []);
 
   // Mock function to simulate search suggestions
   const handleSearchInput = (query: string) => {
@@ -43,10 +60,6 @@ const Home = ({ initialCartCount = 0 }: HomeProps) => {
     }
   };
 
-  const handleAddToCart = () => {
-    setCartCount((prevCount) => prevCount + 1);
-  };
-
   const handleFilterChange = (newFilters: typeof activeFilters) => {
     setActiveFilters(newFilters);
   };
@@ -63,6 +76,31 @@ const Home = ({ initialCartCount = 0 }: HomeProps) => {
     setShowSuggestions(false);
     // In a real app, this would trigger a search API call
     console.log("Selected suggestion:", suggestion);
+  };
+
+  const handleLogin = () => {
+    setShowLoginModal(true);
+    setShowSignupModal(false);
+  };
+
+  const handleSignup = () => {
+    setShowSignupModal(true);
+    setShowLoginModal(false);
+  };
+
+  const handleLogout = () => {
+    authService.logout();
+    setCurrentUser(null);
+  };
+
+  const handleLoginSuccess = () => {
+    setShowLoginModal(false);
+    setCurrentUser(authService.getCurrentUser());
+  };
+
+  const handleSignupSuccess = () => {
+    setShowSignupModal(false);
+    setCurrentUser(authService.getCurrentUser());
   };
 
   return (
@@ -104,7 +142,11 @@ const Home = ({ initialCartCount = 0 }: HomeProps) => {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" className="relative">
+            <Button
+              variant="ghost"
+              className="relative"
+              onClick={() => (window.location.href = "/cart")}
+            >
               <ShoppingCart className="h-6 w-6" />
               {cartCount > 0 && (
                 <Badge className="absolute -top-2 -right-2 bg-primary text-white">
@@ -113,10 +155,31 @@ const Home = ({ initialCartCount = 0 }: HomeProps) => {
               )}
             </Button>
             <div className="hidden md:block">
-              <Button variant="outline" className="mr-2">
-                Sign In
-              </Button>
-              <Button>Sign Up</Button>
+              {currentUser ? (
+                <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 px-3 py-1 bg-gray-100 rounded-full">
+                    <User className="h-4 w-4" />
+                    <span className="text-sm font-medium">
+                      {currentUser.name}
+                    </span>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={handleLogout}>
+                    <LogOut className="h-4 w-4 mr-1" />
+                    Logout
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    className="mr-2"
+                    onClick={handleLogin}
+                  >
+                    Sign In
+                  </Button>
+                  <Button onClick={handleSignup}>Sign Up</Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -134,6 +197,71 @@ const Home = ({ initialCartCount = 0 }: HomeProps) => {
         </div>
       </header>
 
+      {/* Login/Signup Modals */}
+      {showLoginModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-2 absolute right-0 top-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => setShowLoginModal(false)}
+              >
+                ✕
+              </Button>
+            </div>
+            <Login
+              onSuccess={handleLoginSuccess}
+              onCancel={() => setShowLoginModal(false)}
+            />
+            <div className="pb-6 text-center">
+              <Button
+                variant="link"
+                onClick={() => {
+                  setShowLoginModal(false);
+                  setShowSignupModal(true);
+                }}
+              >
+                Don't have an account? Sign up
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSignupModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-2 absolute right-0 top-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => setShowSignupModal(false)}
+              >
+                ✕
+              </Button>
+            </div>
+            <Signup
+              onSuccess={handleSignupSuccess}
+              onCancel={() => setShowSignupModal(false)}
+            />
+            <div className="pb-6 text-center">
+              <Button
+                variant="link"
+                onClick={() => {
+                  setShowSignupModal(false);
+                  setShowLoginModal(true);
+                }}
+              >
+                Already have an account? Sign in
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row gap-6">
@@ -150,10 +278,7 @@ const Home = ({ initialCartCount = 0 }: HomeProps) => {
                 Showing 24 of 256 products
               </div>
             </div>
-            <ProductGrid
-              filters={activeFilters}
-              onAddToCart={handleAddToCart}
-            />
+            <ProductGrid filters={activeFilters} />
           </div>
         </div>
       </main>

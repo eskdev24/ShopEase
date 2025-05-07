@@ -1,5 +1,6 @@
 import React from "react";
 import ProductCard from "./ProductCard";
+import { useCart } from "@/contexts/CartContext";
 
 interface Product {
   id: string;
@@ -25,6 +26,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   loading = false,
   filters = {},
 }) => {
+  const { addToCart } = useCart();
   // Filter and sort products based on filters
   const filteredProducts = React.useMemo(() => {
     let result = [...products];
@@ -102,6 +104,14 @@ const ProductGrid: React.FC<ProductGridProps> = ({
               price={product.price}
               image={product.image}
               rating={product.rating}
+              onAddToCart={() =>
+                addToCart({
+                  id: product.id,
+                  name: product.name,
+                  price: product.price,
+                  image: product.image,
+                })
+              }
             />
           ))}
         </div>

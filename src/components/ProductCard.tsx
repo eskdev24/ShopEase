@@ -3,6 +3,7 @@ import { Star } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardFooter } from "./ui/card";
 import { Badge } from "./ui/badge";
+import { useCart } from "@/contexts/CartContext";
 
 interface ProductCardProps {
   id: string;
@@ -23,8 +24,10 @@ const ProductCard = ({
   rating = 4.5,
   discount,
   isNew = false,
-  onAddToCart = () => {},
+  onAddToCart,
 }: ProductCardProps) => {
+  const { addToCart } = useCart();
+
   const renderStars = () => {
     const stars = [];
     const fullStars = Math.floor(rating);
@@ -52,7 +55,13 @@ const ProductCard = ({
   };
 
   const handleAddToCart = () => {
-    onAddToCart(id);
+    // Add to cart using context
+    addToCart({ id, name, price, image });
+
+    // Also call the prop callback if provided (for backward compatibility)
+    if (onAddToCart) {
+      onAddToCart(id);
+    }
   };
 
   return (
