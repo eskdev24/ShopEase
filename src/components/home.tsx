@@ -38,22 +38,48 @@ const Home = ({ initialCartCount = 0 }: HomeProps) => {
 
   // Check authentication status on component mount
   useEffect(() => {
-    const user = authService.getCurrentUser();
-    setCurrentUser(user);
+    const checkAuth = async () => {
+      try {
+        const user = await authService.getCurrentUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error("Error checking authentication:", error);
+      }
+    };
+
+    // Initial auth check
+    checkAuth();
+
+    // Subscribe to auth state changes
+    const { data: authListener } = authService.onAuthStateChange(
+      (event, session) => {
+        if (event === "SIGNED_IN" && session?.user) {
+          authService.getCurrentUser().then(setCurrentUser);
+        } else if (event === "SIGNED_OUT") {
+          setCurrentUser(null);
+        }
+      },
+    );
+
+    // Cleanup subscription
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
   }, []);
 
-  // Mock function to simulate search suggestions
+  // Function to handle search input and generate suggestions
   const handleSearchInput = (query: string) => {
     setSearchQuery(query);
     if (query.length > 1) {
-      // Mock suggestions based on input
-      const mockSuggestions = [
+      // Generate suggestions based on input
+      // In a production app, this would call an API endpoint
+      const suggestions = [
         `${query} shirts`,
         `${query} pants`,
         `${query} accessories`,
         `${query} shoes`,
       ];
-      setSearchSuggestions(mockSuggestions);
+      setSearchSuggestions(suggestions);
       setShowSuggestions(true);
     } else {
       setShowSuggestions(false);
@@ -67,15 +93,17 @@ const Home = ({ initialCartCount = 0 }: HomeProps) => {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setShowSuggestions(false);
-    // In a real app, this would trigger a search API call
+    // In a production app, this would trigger a search API call
     console.log("Searching for:", searchQuery);
+    // TODO: Implement actual search functionality
   };
 
   const selectSuggestion = (suggestion: string) => {
     setSearchQuery(suggestion);
     setShowSuggestions(false);
-    // In a real app, this would trigger a search API call
+    // In a production app, this would trigger a search API call
     console.log("Selected suggestion:", suggestion);
+    // TODO: Implement actual search functionality
   };
 
   const handleLogin = () => {
@@ -88,19 +116,33 @@ const Home = ({ initialCartCount = 0 }: HomeProps) => {
     setShowLoginModal(false);
   };
 
-  const handleLogout = () => {
-    authService.logout();
-    setCurrentUser(null);
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      // The auth state listener will handle setting currentUser to null
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
   };
 
-  const handleLoginSuccess = () => {
+  const handleLoginSuccess = async () => {
     setShowLoginModal(false);
-    setCurrentUser(authService.getCurrentUser());
+    try {
+      const user = await authService.getCurrentUser();
+      setCurrentUser(user);
+    } catch (error) {
+      console.error("Error getting current user after login:", error);
+    }
   };
 
-  const handleSignupSuccess = () => {
+  const handleSignupSuccess = async () => {
     setShowSignupModal(false);
-    setCurrentUser(authService.getCurrentUser());
+    try {
+      const user = await authService.getCurrentUser();
+      setCurrentUser(user);
+    } catch (error) {
+      console.error("Error getting current user after signup:", error);
+    }
   };
 
   return (

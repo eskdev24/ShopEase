@@ -56,6 +56,7 @@ const Login = ({ onSuccess, onCancel }: LoginProps) => {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="your@email.com"
             required
+            disabled={isLoading}
           />
         </div>
 
@@ -73,6 +74,7 @@ const Login = ({ onSuccess, onCancel }: LoginProps) => {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
             required
+            disabled={isLoading}
           />
         </div>
 
@@ -82,16 +84,17 @@ const Login = ({ onSuccess, onCancel }: LoginProps) => {
           </Button>
 
           {onCancel && (
-            <Button type="button" variant="outline" onClick={onCancel}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isLoading}
+            >
               Cancel
             </Button>
           )}
         </div>
       </form>
-
-      <div className="mt-4 text-center text-sm text-gray-600">
-        <p>Don't have an account? Sign up</p>
-      </div>
     </div>
   );
 };

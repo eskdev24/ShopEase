@@ -26,6 +26,12 @@ const Signup = ({ onSuccess, onCancel }: SignupProps) => {
       return;
     }
 
+    // Validate password length
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -65,6 +71,7 @@ const Signup = ({ onSuccess, onCancel }: SignupProps) => {
             onChange={(e) => setName(e.target.value)}
             placeholder="John Doe"
             required
+            disabled={isLoading}
           />
         </div>
 
@@ -82,6 +89,7 @@ const Signup = ({ onSuccess, onCancel }: SignupProps) => {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="your@email.com"
             required
+            disabled={isLoading}
           />
         </div>
 
@@ -99,6 +107,7 @@ const Signup = ({ onSuccess, onCancel }: SignupProps) => {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
             required
+            disabled={isLoading}
           />
         </div>
 
@@ -116,6 +125,7 @@ const Signup = ({ onSuccess, onCancel }: SignupProps) => {
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="••••••••"
             required
+            disabled={isLoading}
           />
         </div>
 
@@ -125,16 +135,17 @@ const Signup = ({ onSuccess, onCancel }: SignupProps) => {
           </Button>
 
           {onCancel && (
-            <Button type="button" variant="outline" onClick={onCancel}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isLoading}
+            >
               Cancel
             </Button>
           )}
         </div>
       </form>
-
-      <div className="mt-4 text-center text-sm text-gray-600">
-        <p>Already have an account? Sign in</p>
-      </div>
     </div>
   );
 };

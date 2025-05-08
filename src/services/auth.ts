@@ -1,51 +1,52 @@
-// Mock user type
+import { supabase } from "@/lib/supabase";
+
+// User type
 export interface User {
   id: string;
   email: string;
   name: string;
 }
 
-// Mock authentication service
 class AuthService {
-  private currentUser: User | null = null;
-  private isAuthenticated: boolean = false;
-
-  // Mock login method
+  // Login method using Supabase
   async login(email: string, password: string): Promise<User> {
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    // Mock validation
     if (!email || !password) {
       throw new Error("Email and password are required");
     }
 
-    if (password.length < 6) {
-      throw new Error("Invalid credentials");
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      throw new Error(error.message);
     }
 
-    // Mock successful login
-    const user: User = {
-      id: "1",
-      email,
-      name: email.split("@")[0],
+    if (!data.user) {
+      throw new Error("Login failed");
+    }
+
+    // Get user profile from the profiles table
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("name")
+      .eq("id", data.user.id)
+      .single();
+
+    if (profileError) {
+      console.error("Error fetching user profile:", profileError);
+    }
+
+    return {
+      id: data.user.id,
+      email: data.user.email || "",
+      name: profileData?.name || email.split("@")[0], // Fallback to email username if no name
     };
-
-    this.currentUser = user;
-    this.isAuthenticated = true;
-
-    // Store in localStorage to persist across page refreshes
-    localStorage.setItem("user", JSON.stringify(user));
-
-    return user;
   }
 
-  // Mock signup method
+  // Signup method using Supabase
   async signup(name: string, email: string, password: string): Promise<User> {
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    // Mock validation
     if (!name || !email || !password) {
       throw new Error("All fields are required");
     }
@@ -54,53 +55,79 @@ class AuthService {
       throw new Error("Password must be at least 6 characters");
     }
 
-    // Mock successful registration
-    const user: User = {
-      id: Math.random().toString(36).substr(2, 9),
+    // Register the user with Supabase Auth
+    const { data, error } = await supabase.auth.signUp({
       email,
+      password,
+      options: {
+        data: {
+          name,
+        },
+      },
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!data.user) {
+      throw new Error("Signup failed");
+    }
+
+    // Create a profile record in the profiles table
+    const { error: profileError } = await supabase.from("profiles").insert([
+      {
+        id: data.user.id,
+        name,
+        email,
+      },
+    ]);
+
+    if (profileError) {
+      console.error("Error creating user profile:", profileError);
+    }
+
+    return {
+      id: data.user.id,
+      email: data.user.email || "",
       name,
     };
-
-    this.currentUser = user;
-    this.isAuthenticated = true;
-
-    // Store in localStorage to persist across page refreshes
-    localStorage.setItem("user", JSON.stringify(user));
-
-    return user;
   }
 
-  // Logout method
-  logout(): void {
-    this.currentUser = null;
-    this.isAuthenticated = false;
-    localStorage.removeItem("user");
+  // Logout method using Supabase
+  async logout(): Promise<void> {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Error during logout:", error);
+    }
   }
 
-  // Get current user
-  getCurrentUser(): User | null {
-    if (this.currentUser) {
-      return this.currentUser;
+  // Get current user using Supabase
+  async getCurrentUser(): Promise<User | null> {
+    const { data } = await supabase.auth.getUser();
+
+    if (!data.user) {
+      return null;
     }
 
-    // Check localStorage
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        this.currentUser = JSON.parse(storedUser);
-        this.isAuthenticated = true;
-        return this.currentUser;
-      } catch (error) {
-        localStorage.removeItem("user");
-      }
-    }
+    // Get user profile from the profiles table
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("name")
+      .eq("id", data.user.id)
+      .single();
 
-    return null;
+    return {
+      id: data.user.id,
+      email: data.user.email || "",
+      name: profileData?.name || data.user.email?.split("@")[0] || "",
+    };
   }
 
   // Check if user is authenticated
-  isUserAuthenticated(): boolean {
-    return this.isAuthenticated || !!this.getCurrentUser();
+  async isUserAuthenticated(): Promise<boolean> {
+    const { data } = await supabase.auth.getSession();
+    return !!data.session;
   }
 }
 
